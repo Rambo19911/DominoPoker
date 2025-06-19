@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Domino Pokers ar Gemini</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="styles.css?v=1">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a0a;
+            background-image: 
+                radial-gradient(circle at 20% 50%, #1a1a2e 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, #16213e 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, #0f3460 0%, transparent 50%);
+            color: #e2e8f0;
+            user-select: none;
+            overflow-x: hidden;
+            padding: 1rem;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                linear-gradient(rgba(0,0,0,0) 0%, rgba(0,0,0,0.3) 100%),
+                radial-gradient(ellipse at top, transparent 0%, rgba(0,0,0,0.4) 100%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .domino-back {
+            background-color: #1a1a1a;
+            background-image: url('images/Domino-texture-vertikal.jpg');
+            background-position: center;
+            background-size: cover;
+            background-repeat: no-repeat;
+            border: 1px solid rgba(255,255,255,0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .domino-back::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, 
+                transparent 40%, 
+                rgba(99,179,237,0.05) 50%, 
+                transparent 60%
+            );
+            pointer-events: none;
+        }
+
+        /* Stili domino ar aizmugures klasi */
+        .domino.domino-back {
+            background-color: #1a1a1a !important;
+            background-image: url('images/Domino-texture-vertikal.jpg') !important;
+            background-position: center !important;
+            background-size: cover !important;
+            background-repeat: no-repeat !important;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .domino {
+            width: 48px; 
+            height: 96px; 
+            background: linear-gradient(145deg, #ffffff 0%, #f0f0f0 100%);
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 6px;
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-around;
+            align-items: center; 
+            padding: 4px; 
+            margin: 4px;
+            cursor: pointer; 
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 
+                0 2px 4px rgba(0,0,0,0.1),
+                0 8px 16px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .domino::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent 30%,
+                rgba(255,255,255,0.2) 50%,
+                transparent 70%
+            );
+            transform: rotate(45deg);
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+        }
+        
+        .domino:hover:not(.disabled) {
+            transform: translateY(-6px);
+            box-shadow: 
+                0 8px 16px rgba(0,0,0,0.2),
+                0 16px 32px rgba(0,0,0,0.15);
+        }
+
+        .domino:hover:not(.disabled)::before {
+            opacity: 1;
+            right: 150%;
+        }
+        
+        
+        .domino.disabled { 
+            cursor: not-allowed; 
+            opacity: 0.4; 
+            background: #6b7280;
+            transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .domino-side { width: 80px; height: 40px; flex-direction: row; }
+        .domino-side .domino-half { width: 50%; height: 100%; }
+        .domino-side .domino-divider { width: 1px; height: 80%; }
+        .domino-side.domino-back {
+            background-image: url('images/Domino-texture-horizontal.jpg') !important;
+            background-position: center !important;
+            background-size: cover !important;
+            background-repeat: no-repeat !important;
+        }
+        
+        .domino-half {
+            width: 100%; 
+            height: 50%; 
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); 
+            grid-template-rows: repeat(3, 1fr);
+            padding: 3px; 
+            gap: 1px;
+        }
+        
+        .domino-divider { 
+            width: 80%; 
+            height: 1px; 
+            background: linear-gradient(90deg, transparent, #d1d5db, transparent);
+            align-self: center; 
+        }
+        
+        .dot { 
+            width: 100%; 
+            height: 100%; 
+            border-radius: 50%; 
+            background: radial-gradient(circle at 30% 30%, #4a4a4a, #1a1a1a);
+            transform: scale(0.65);
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .player-area {
+            min-height: 140px; 
+            border-radius: 12px; 
+            padding: 10px;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); 
+            position: relative;
+            border: 1px solid transparent;
+            background: rgba(255,255,255,0.02);
+            backdrop-filter: blur(10px);
+        }
+        
+        .active-player {
+            background: rgba(99, 179, 237, 0.1);
+            border-color: rgba(99, 179, 237, 0.3);
+            box-shadow: 
+                inset 0 0 20px rgba(99, 179, 237, 0.1),
+                0 0 40px rgba(99, 179, 237, 0.1);
+        }
+
+        .active-player::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            background: linear-gradient(45deg, transparent, rgba(99, 179, 237, 0.3), transparent);
+            border-radius: 12px;
+            opacity: 0;
+            animation: active-sweep 3s linear infinite;
+        }
+
+        @keyframes place-subtle {
+            0% { 
+                transform: translateY(-20px) scale(0.95);
+                opacity: 0;
+            }
+            100% { 
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .turn-starter-indicator {
+            border-color: rgba(246, 224, 94, 0.4);
+            background: rgba(246, 224, 94, 0.05);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .table-area {
+            min-height: 140px; 
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: center; 
+            align-items: center; 
+            gap: 8px;
+            padding: 20px;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(20px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .table-area::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: 
+                radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.5) 100%),
+                conic-gradient(
+                    from 0deg at 50% 50%,
+                    rgba(99, 179, 237, 0.03) 0deg,
+                    transparent 60deg,
+                    transparent 180deg,
+                    rgba(159, 122, 234, 0.03) 240deg,
+                    transparent 360deg
+                );
+            animation: table-rotate 30s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes table-rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .trick-domino-container {
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .trick-domino-container .domino {
+            animation: place-subtle 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes place-subtle {
+            0% { 
+                transform: translateY(-30px) scale(0.9);
+                opacity: 0;
+            }
+            60% {
+                transform: translateY(3px) scale(1.02);
+                opacity: 1;
+            }
+            100% { 
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .trick-domino-owner {
+            font-size: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: rgba(255,255,255,0.7);
+            padding: 2px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+            margin-top: 4px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .winning-domino .domino {
+            transform: scale(1.05) !important;
+            box-shadow: 
+                0 0 0 2px rgba(246, 224, 94, 0.5),
+                0 4px 20px rgba(246, 224, 94, 0.3);
+            z-index: 10;
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        .modal {
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8); 
+            display: flex;
+            justify-content: center; 
+            align-items: center; 
+            z-index: 100;
+            backdrop-filter: blur(8px);
+            animation: modal-fade-in 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes modal-fade-in {
+            from { 
+                opacity: 0;
+                backdrop-filter: blur(0px);
+            }
+            to { 
+                opacity: 1;
+                backdrop-filter: blur(8px);
+            }
+        }
+        
+        .modal-content {
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 16px;
+            text-align: center; 
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            max-width: 90%; 
+            width: 600px; 
+            position: relative;
+            backdrop-filter: blur(20px);
+            animation: modal-slide-in 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes modal-slide-in {
+            from { 
+                transform: translateY(-30px) scale(0.95); 
+                opacity: 0; 
+            }
+            to { 
+                transform: translateY(0) scale(1); 
+                opacity: 1; 
+            }
+        }
+        
+        .modal-content {
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 16px;
+            text-align: center; 
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            max-width: 90%; 
+            width: 600px; 
+            position: relative;
+            backdrop-filter: blur(20px);
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+            color: white; 
+            padding: 12px 24px;
+            border-radius: 8px; 
+            border: none; 
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 500;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn:hover:not(:disabled) { 
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+            transition: transform 0.1s;
+        }
+        
+        .btn:disabled { 
+            background: #4a5568; 
+            cursor: not-allowed; 
+            opacity: 0.5;
+        }
+        
+        .btn-sm { 
+            padding: 6px 12px; 
+            font-size: 13px; 
+        }
+        
+        .autoplay-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0,0,0,0.4);
+            padding: 8px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .speed-btn {
+            background: rgba(74, 85, 104, 0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .speed-btn.active {
+            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+            border-color: #4299e1;
+            color: white;
+        }
+        
+        .btn-toggle-on { 
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+        }
+
+        .winner-cup {
+            position: absolute; 
+            top: 10px; 
+            right: 10px; 
+            font-size: 48px;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+            animation: winner-appear 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes winner-appear {
+            0% { 
+                transform: scale(0) rotate(-90deg);
+                opacity: 0;
+            }
+            70% {
+                transform: scale(1.1) rotate(10deg);
+                opacity: 1;
+            }
+            100% { 
+                transform: scale(1) rotate(0);
+                opacity: 1;
+            }
+        }
+        
+        .cpu-comment {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            color: #1a1a1a;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .emotion-emoji {
+            font-size: 1.1em;
+            margin-left: 4px;
+            display: inline-block;
+            animation: emotionPop 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes emotionPop {
+            0% { 
+                transform: scale(0);
+                opacity: 0;
+            }
+            70% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+            100% { 
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .lang-switcher {
+            position: absolute; 
+            top: 1rem; 
+            right: 1rem; 
+            display: flex;
+            gap: 0.5rem; 
+            background: rgba(0,0,0,0.4);
+            padding: 0.5rem; 
+            border-radius: 8px; 
+            z-index: 50;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            animation: controls-fade-in 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.1s backwards;
+        }
+        
+        .lang-btn {
+            padding: 0.3rem 0.6rem; 
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px; 
+            cursor: pointer; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            background: transparent;
+            color: rgba(255,255,255,0.6);
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        .lang-btn.active {
+            background: rgba(66, 153, 225, 0.2);
+            border-color: #4299e1;
+            color: #63b3ed;
+        }
+        
+        #round-results-body .result-row { 
+            padding: 12px; 
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        #round-results-body .result-row:hover {
+            background-color: rgba(255,255,255,0.02);
+        }
+        
+        #round-results-body .result-row:last-child { 
+            border-bottom: none; 
+        }
+        
+        #round-results-body .player-name { 
+            font-weight: 600; 
+            font-size: 1.1rem; 
+            color: #e2e8f0;
+        }
+        
+        #round-results-body .bid-info { 
+            font-size: 0.9rem; 
+            color: rgba(255,255,255,0.5);
+        }
+        
+        #round-results-body .points-calculation { 
+            font-size: 1.2rem; 
+            font-weight: 600;
+            color: #f6e05e;
+        }
+
+        .gemini-btn { 
+            background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%);
+        }
+        
+        .gemini-btn:hover:not(:disabled) { 
+            box-shadow: 0 4px 12px rgba(159, 122, 234, 0.4);
+        }
+        
+        .loader {
+            width: 40px; 
+            height: 40px; 
+            border-radius: 50%;
+            position: relative;
+            background: conic-gradient(from 0deg, transparent 0%, #9f7aea 100%);
+            animation: rotate 1.5s linear infinite;
+        }
+
+        .loader::before {
+            content: '';
+            position: absolute;
+            inset: 4px;
+            border-radius: 50%;
+            background: #1a1a1a;
+        }
+        
+        @keyframes rotate { 
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); } 
+        }
+
+        .top-left-controls {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            z-index: 50;
+            animation: controls-fade-in 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes controls-fade-in {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .icon-btn {
+            width: 40px; 
+            height: 40px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            font-size: 1.2rem;
+            color: rgba(255,255,255,0.6);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .icon-btn:hover { 
+            background: rgba(255,255,255,0.05);
+            color: rgba(255,255,255,0.9);
+            border-color: rgba(255,255,255,0.2);
+            transform: scale(1.05);
+        }
+
+        #rules-modal-content, #stats-modal-content {
+            text-align: left;
+            max-height: 70vh;
+            overflow-y: auto;
+            padding-right: 15px;
+        }
+        
+        #rules-modal-content::-webkit-scrollbar,
+        #stats-modal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #rules-modal-content::-webkit-scrollbar-track,
+        #stats-modal-content::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+        }
+
+        #rules-modal-content::-webkit-scrollbar-thumb,
+        #stats-modal-content::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+
+        #rules-modal-content::-webkit-scrollbar-thumb:hover,
+        #stats-modal-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        #rules-modal-content h3, #stats-modal-content h3 { 
+            font-size: 1.25rem; 
+            font-weight: 600; 
+            margin-top: 1.5rem; 
+            margin-bottom: 0.75rem; 
+            color: #e2e8f0;
+            position: relative;
+            padding-bottom: 0.5rem;
+        }
+
+        #rules-modal-content h3::after,
+        #stats-modal-content h3::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 40px;
+            height: 2px;
+            background: linear-gradient(90deg, #4299e1, transparent);
+        }
+        
+        #rules-modal-content h4 { 
+            font-size: 1.1rem; 
+            font-weight: 500; 
+            margin-top: 1rem; 
+            margin-bottom: 0.5rem;
+            color: rgba(255,255,255,0.8);
+        }
+        
+        #rules-modal-content p, 
+        #rules-modal-content li, 
+        #stats-modal-content p { 
+            margin-bottom: 0.5rem; 
+            color: rgba(255,255,255,0.6);
+            line-height: 1.6;
+        }
+        
+        #rules-modal-content ul { 
+            list-style-type: none; 
+            padding-left: 0;
+        }
+
+        #rules-modal-content ul li::before {
+            content: '▸';
+            color: #4299e1;
+            margin-right: 8px;
+        }
+        
+        #stats-modal-content .stat-value { 
+            font-weight: 600; 
+            color: #f6e05e;
+            font-size: 1.1em;
+        }
+
+        /* Noņem nevajadzīgo zaļo malu */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Spēles nosaukuma stili (ja HTML ir elements ar klasi .game-title) */
+        .game-title {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+            margin-bottom: 2rem;
+            letter-spacing: -0.02em;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        .game-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #4299e1, transparent);
+        }
+    </style>
+</head>
+<body>
+<div id="lobby-screen" class="fixed inset-0 flex flex-col items-center justify-center p-4 z-50">
+<div class="w-full max-w-6xl h-full backdrop-blur-xl rounded-2xl shadow-2xl flex flex-col lg:flex-row overflow-hidden border border-slate-700 lobby-center-panel">
+            <!-- Sidebar for Navigation -->
+            <div class="w-full lg:w-64 p-4 flex flex-row lg:flex-col justify-between items-center lg:items-start border-b lg:border-b-0 lg:border-r border-slate-700 overflow-x-auto lg:overflow-x-hidden">
+                <div class="flex flex-row lg:flex-col gap-3">
+                    <button class="lobby-nav-btn active" data-target="play-game"><i class="fas fa-play"></i> <span class="hidden lg:inline" data-lang-key="playGame">Spēlēt</span></button>
+                </div>
+                
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="flex-1 p-6 overflow-y-auto custom-scrollbar">
+                <!-- Play Game Section -->
+                <div id="play-game" class="lobby-content-section active">
+                    <h2 class="text-3xl font-bold text-white mb-6" data-lang-key="playGame">Spēlēt Spēli</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="p-6 rounded-lg border border-slate-700 hover:border-blue-500 transition-all duration-300 cursor-pointer" id="quick-play-card">
+                            <h3 class="text-xl font-semibold text-white mb-2" data-lang-key="quickPlay">Ātrā Spēle</h3>
+                            <p class="text-slate-400" data-lang-key="quickPlayDesc">Sākt spēli pret CPU spēlētājiem. Ideāli piemērots ātrai izklaidei.</p>
+                            <button class="btn mt-4 w-full" id="start-quick-game" data-lang-key="start">Sākt</button>
+                        </div>
+                    </div>
+                </div>
+
+                
+
+            </div>
+        </div>
+    </div>
+
+    <div class="top-left-controls">
+        <button id="help-btn" class="icon-btn" title="Noteikumi">?</button>
+        <button id="stats-btn" class="icon-btn" title="Statistika">📊</button>
+        <button id="leave-game-btn" class="icon-btn hidden" title="Pamest spēli"><i class="fas fa-times"></i></button>
+    </div>
+
+    <div class="lang-switcher">
+        <button id="lang-lv" class="lang-btn active">LV</button>
+        <button id="lang-en" class="lang-btn">EN</button>
+    </div>
+
+    <div id="game-container" class="max-w-screen-xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <div class="lg:col-span-4">
+            <div id="player-area-1" class="player-area mb-4">
+                <h2 id="player-name-1" class="text-xl font-bold text-center"></h2>
+                <div id="player-hand-1" class="flex justify-center flex-wrap"></div>
+                <div class="text-center mt-2 text-sm sm:text-base">
+                    <span data-lang-key="bid">Solīja</span>: <span id="player-bid-1">?</span> |
+                    <span data-lang-key="taken">Paņēma</span>: <span id="player-tricks-1">0</span>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center space-x-2 sm:space-x-4">
+                <div id="player-area-0" class="player-area w-1/4 sm:w-1/5">
+                    <h2 id="player-name-0" class="text-xl font-bold text-center"></h2>
+                    <div id="player-hand-0" class="flex flex-wrap justify-center"></div>
+                     <div class="text-center mt-2 text-sm sm:text-base">
+                        <p><span data-lang-key="bid">Solīja</span>: <span id="player-bid-0">?</span></p>
+                        <p><span data-lang-key="taken">Paņēma</span>: <span id="player-tricks-0">0</span></p>
+                    </div>
+                </div>
+
+                <div class="w-1/2 sm:w-3/5">
+                    <div id="game-info" class="text-center mb-2">
+                        <h1 class="text-2xl sm:text-3xl font-bold">Domino Pokers</h1>
+                        <p id="status-message" class="text-lg h-8"></p>
+                        <p class="text-xs sm:text-sm"><span data-lang-key="round">Partija</span>: <span id="round-number">1</span>/<span id="total-rounds">5</span></p>
+                    </div>
+                    <div id="table-area" class="table-area">
+                        <div id="bidding-controls" class="hidden"></div>
+                    </div>
+                     <div id="suit-info" class="text-center mt-2 h-6 font-bold"></div>
+                </div>
+
+                 <div id="player-area-2" class="player-area w-1/4 sm:w-1/5">
+                    <h2 id="player-name-2" class="text-xl font-bold text-center"></h2>
+                    <div id="player-hand-2" class="flex flex-wrap justify-center"></div>
+                     <div class="text-center mt-2 text-sm sm:text-base">
+                        <p><span data-lang-key="bid">Solīja</span>: <span id="player-bid-2">?</span></p>
+                        <p><span data-lang-key="taken">Paņēma</span>: <span id="player-tricks-2">0</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="player-area-3" class="player-area mt-4">
+                <div class="absolute top-2 right-2 flex items-center gap-2">
+                    <div class="autoplay-controls">
+                        <button id="autoplay-btn" class="btn btn-sm"></button>
+                    </div>
+                    <div class="autoplay-controls">
+                        <span class="text-xs font-bold" data-lang-key="speed">Ātrums:</span>
+                        <button id="speed-1x" class="btn btn-sm speed-btn active">1x</button>
+                        <button id="speed-2x" class="btn btn-sm speed-btn">2x</button>
+                        <button id="speed-3x" class="btn btn-sm speed-btn">3x</button>
+                    </div>
+                </div>
+                <h2 id="player-name-3" class="text-xl font-bold text-center" data-lang-key="you">Jūs</h2>
+                <div id="player-hand-3" class="flex justify-center flex-wrap"></div>
+                 <div class="text-center mt-2 text-sm sm:text-base">
+                    <span data-lang-key="bid">Solīja</span>: <span id="player-bid-3">?</span> |
+                    <span data-lang-key="taken">Paņēma</span>: <span id="player-tricks-3">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="lg:col-span-1">
+            <div class="sticky top-4">
+                <div id="scoreboard" class="scoreboard">
+                    <h2 class="text-2xl font-bold mb-4 text-center" data-lang-key="scoreboard">Rezultāti</h2>
+                    <div id="scoreboard-body" class="space-y-1"></div>
+                </div>
+                <div id="history-panel" class="mt-4">
+                    <h3 class="text-xl font-bold mb-2 text-center" data-lang-key="trickHistory">Gājienu Vēsture</h3>
+                    <div id="history-body" class="space-y-2 bg-slate-800/60 p-2 rounded min-h-[100px] items-center"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="rounds-modal" class="modal hidden">
+        <div class="modal-content">
+            <!-- Language switcher in popup -->
+            <div class="flex justify-end mb-4">
+                <div class="flex space-x-2">
+                    <button id="popup-lang-lv" class="px-3 py-1 text-sm font-bold bg-gray-700 text-white rounded hover:bg-gray-600 active">LV</button>
+                    <button id="popup-lang-en" class="px-3 py-1 text-sm font-bold bg-gray-700 text-white rounded hover:bg-gray-600">EN</button>
+                </div>
+            </div>
+            <h2 class="text-2xl mb-4" data-lang-key="howManyRounds">Cik partijas spēlēsiet?</h2>
+            <input type="number" id="rounds-input" class="bg-gray-700 text-white p-2 rounded w-full mb-4" value="5" min="1" max="20">
+            <button id="start-game-btn" class="btn" data-lang-key="startGame">Sākt spēli</button>
+        </div>
+    </div>
+        
+    <div id="suit-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 class="text-2xl mb-4" data-lang-key="chooseSuitLead">Ar kuru skaitli sākt gājienu?</h2>
+            <div id="suit-choice-buttons" class="flex justify-center space-x-2"></div>
+        </div>
+    </div>
+
+    <div id="round-over-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold mb-4" data-lang-key="roundResults">Punktu Aprēķins</h2>
+            <div id="round-results-body" class="mb-6 text-left space-y-2"></div>
+            <div class="flex justify-center gap-4">
+                <button id="next-round-btn" class="btn" data-lang-key="continue">Turpināt</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-over-modal" class="modal hidden">
+        <div class="modal-content">
+            <div id="winner-animation-container"></div>
+            <h2 id="game-over-title" class="text-3xl font-bold mb-4" data-lang-key="gameOver">Spēle Beigusies!</h2>
+            <p id="game-over-winner" class="text-xl mb-4"></p>
+            <div id="final-scores" class="mb-6 text-left"></div>
+            <div class="flex flex-row justify-center gap-4">
+                <button id="play-again-btn" class="btn" data-lang-key="playAgain">Spēlēt vēlreiz</button>
+                <button id="exit-to-lobby-btn" class="btn bg-red-700 hover:bg-red-800" data-lang-key="exit">Iziet</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <div id="rules-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="rules-modal-title" class="text-2xl font-bold mb-4">Noteikumi</h2>
+            <div id="rules-modal-content" class="mb-6"></div>
+            <button id="rules-modal-close-btn" class="btn">Aizvērt</button>
+        </div>
+    </div>
+
+    <div id="stats-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="stats-modal-title" class="text-2xl font-bold mb-4">Jūsu Statistika</h2>
+            <div id="stats-modal-content" class="mb-6"></div>
+            <button id="stats-modal-close-btn" class="btn">Aizvērt</button>
+        </div>
+    </div>
+
+<script src="script.js"></script>
+</body>
+</html>
